@@ -1,4 +1,4 @@
-# initialize_db.py
+
 
 from mongodb_connection import DatabaseConnection
 
