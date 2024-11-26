@@ -4,6 +4,9 @@
 Este projeto é um sistema de gerenciamento de hotel desenvolvido em Python, utilizando MongoDB para armazenamento de dados. 
 O objetivo do sistema é gerenciar clientes, quartos, reservas e gerar relatórios.
 
+## Video de Demonstração
+https://youtu.be/6TVy017h95Y?feature=shared
+
 ## Estrutura do Projeto
 
 - **`cliente.py`**: Gerencia os dados e operações relacionadas aos clientes.
@@ -14,12 +17,13 @@ O objetivo do sistema é gerenciar clientes, quartos, reservas e gerar relatóri
 - **`relatorio.py`**: Geração de relatórios relacionados ao sistema.
 - **`reserva.py`**: Manipulação de reservas de clientes nos quartos.
 - **`script_mongodb.py`**: Scripts adicionais para operações no MongoDB.
+- **`trabalhoBD_hotel.session.sql`**: Scripts adicionais para operações no MySQL.
 
 ## Requisitos
 
 - **Sistema Operacional**: Linux (Red Hat ou outras distribuições).
 - **Linguagens**: Python 3.8 ou superior.
-- **Banco de Dados**: MongoDB.
+- **Banco de Dados**: MongoDB ou MySQL.
 
 ## Configuração do Ambiente
 
@@ -28,8 +32,10 @@ O objetivo do sistema é gerenciar clientes, quartos, reservas e gerar relatóri
    sudo yum install python3
    ```
 
-2. **Instale o MongoDB**:
-   Siga a [documentação oficial do MongoDB](https://www.mongodb.com/docs/manual/installation/) para Red Hat.
+2. **Instale o MongoDB e o MySQL**:
+   MongoDB: Siga a [documentação oficial do MongoDB](https://www.mongodb.com/docs/manual/installation/) para Red Hat.
+   MySQL: Siga a [documentação oficial do MySQL](https://dev.mysql.com/doc/mysql-yum-repo-quick-guide/en/?form=MG0AV3) para Red Hat.
+
 
 3. **Instale as dependências do projeto**:
    No diretório raiz do projeto, execute:
@@ -39,8 +45,10 @@ O objetivo do sistema é gerenciar clientes, quartos, reservas e gerar relatóri
 
    Certifique-se de adicionar um arquivo `requirements.txt` com as bibliotecas necessárias, como `pymongo`.
 
-4. **Configuração do MongoDB**:
-   Certifique-se de que o MongoDB está em execução e que as credenciais de conexão no arquivo `mongodb_connection.py` estão corretas.
+4. **Configuração do Banco de Dados**:
+   MongoDB: Certifique-se de que o MongoDB está em execução e que as credenciais de conexão no arquivo `mongodb_connection.py` estão corretas.
+
+   MySQL: Certifique-se de que o MySQL está em execução e que as credenciais de conexão no arquivo mysql_connection.py estão corretas.
 
 ## Execução do Projeto
 

@@ -19,7 +19,7 @@ class Cliente:
         elif self.db_type == 'mysql':
             self._create_cliente_mysql()
         else:
-            print("Tipo de banco de dados inválido.")
+            print("Tipo de banco de dados inválidoo.")
 
     def _create_cliente_mongodb(self):
         try:
