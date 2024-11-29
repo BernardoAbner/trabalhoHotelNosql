@@ -1,9 +1,7 @@
-# reserva.py
-
+from DB_CONNECTIONS.mongodb_connection import MongoDBConnection
+from DB_CONNECTIONS.mysql_connection import MySQLConnection
 from pymongo.errors import DuplicateKeyError, PyMongoError
 from mysql.connector import Error as MySQLError
-from mongodb_connection import MongoDBConnection
-from mysql_connection import MySQLConnection
 import datetime
 
 class Reserva:
@@ -20,6 +18,7 @@ class Reserva:
         self.db_type = db_type
 
     def create_reserva(self):
+        """Cria uma reserva dependendo do tipo de banco de dados especificado."""
         if self.db_type == 'mongodb':
             self._create_reserva_mongodb()
         elif self.db_type == 'mysql':
@@ -28,13 +27,15 @@ class Reserva:
             print("Tipo de banco de dados inválido.")
 
     def _create_reserva_mongodb(self):
-        mongo_conn = MongoDBConnection()
-        if not mongo_conn.connected:
-            print("Operação no MongoDB não pôde ser realizada.")
-            return
+        """Cria uma reserva no MongoDB."""
         try:
+            mongo_conn = MongoDBConnection()
             db = mongo_conn.get_db()
-            reservas_collection = db['reservas']
+            if db is None:
+                print("Operação no MongoDB não pôde ser realizada.")
+                return
+
+            reserva_collection = db['reserva']
             reserva_data = {
                 'num_reserva': self.num_reserva,
                 'data_inicio': self.data_inicio,
@@ -45,7 +46,7 @@ class Reserva:
                 'num_quarto': self.num_quarto,
                 'cafe_incluso': self.cafe_incluso
             }
-            reservas_collection.insert_one(reserva_data)
+            reserva_collection.insert_one(reserva_data)
             print("Reserva criada com sucesso no MongoDB!")
         except DuplicateKeyError:
             print("Erro: Já existe uma reserva com este número no MongoDB.")
@@ -55,12 +56,14 @@ class Reserva:
             mongo_conn.close_connection()
 
     def _create_reserva_mysql(self):
-        mysql_conn = MySQLConnection()
-        if not mysql_conn.connected:
-            print("Operação no MySQL não pôde ser realizada.")
-            return
+        """Cria uma reserva no MySQL."""
         try:
+            mysql_conn = MySQLConnection()
             db = mysql_conn.get_connection()
+            if db is None:
+                print("Operação no MySQL não pôde ser realizada.")
+                return
+
             cursor = db.cursor()
             cursor.execute(
                 "INSERT INTO RESERVA (NUM_RESERVA, DATA_INICIO, DATA_FINAL, QUANTIDADE_PESSOAS, VALOR_RESERVA, CPF, NUM_QUARTO, CAFE_INCLUSO) "
@@ -80,6 +83,7 @@ class Reserva:
             mysql_conn.close_connection()
 
     def update_reserva(self):
+        """Atualiza uma reserva dependendo do tipo de banco de dados especificado."""
         if self.db_type == 'mongodb':
             self._update_reserva_mongodb()
         elif self.db_type == 'mysql':
@@ -88,12 +92,15 @@ class Reserva:
             print("Tipo de banco de dados inválido.")
 
     def _update_reserva_mongodb(self):
+        """Atualiza uma reserva no MongoDB."""
         try:
-            db = MongoDBConnection()
-            if not db.connected:
+            mongo_conn = MongoDBConnection()
+            db = mongo_conn.get_db()
+            if db is None:
                 print("Erro na conexão com o MongoDB.")
                 return
-            reservas_collection = db.get_db()['reservas']
+
+            reserva_collection = db['reserva']
             update_fields = {}
             if self.data_inicio is not None:
                 update_fields['data_inicio'] = self.data_inicio
@@ -111,25 +118,28 @@ class Reserva:
                 update_fields['cafe_incluso'] = self.cafe_incluso
 
             if update_fields:
-                reservas_collection.update_one(
+                reserva_collection.update_one(
                     {'num_reserva': self.num_reserva},
                     {'$set': update_fields}
                 )
                 print("Reserva atualizada com sucesso no MongoDB!")
             else:
                 print("Nenhum campo para atualizar.")
-            db.close_connection()
-        except Exception as e:
+        except PyMongoError as e:
             print(f"Erro ao atualizar reserva no MongoDB: {e}")
+        finally:
+            mongo_conn.close_connection()
 
     def _update_reserva_mysql(self):
+        """Atualiza uma reserva no MySQL."""
         try:
-            db = MySQLConnection()
-            if not db.connected:
+            mysql_conn = MySQLConnection()
+            db = mysql_conn.get_connection()
+            if db is None:
                 print("Erro na conexão com o MySQL.")
                 return
-            connection = db.get_connection()
-            cursor = connection.cursor()
+
+            cursor = db.cursor()
             update_fields = []
             update_values = []
 
@@ -159,16 +169,18 @@ class Reserva:
                 update_values.append(self.num_reserva)
                 sql = f"UPDATE RESERVA SET {', '.join(update_fields)} WHERE NUM_RESERVA = %s"
                 cursor.execute(sql, tuple(update_values))
-                connection.commit()
+                db.commit()
                 print("Reserva atualizada com sucesso no MySQL!")
             else:
                 print("Nenhum campo para atualizar.")
-            cursor.close()
-            db.close_connection()
-        except Exception as e:
+        except MySQLError as e:
             print(f"Erro ao atualizar reserva no MySQL: {e}")
+        finally:
+            cursor.close()
+            mysql_conn.close_connection()
 
     def delete_reserva(self):
+        """Deleta uma reserva dependendo do tipo de banco de dados especificado."""
         if self.db_type == 'mongodb':
             self._delete_reserva_mongodb()
         elif self.db_type == 'mysql':
@@ -177,42 +189,50 @@ class Reserva:
             print("Tipo de banco de dados inválido.")
 
     def _delete_reserva_mongodb(self):
+        """Deleta uma reserva no MongoDB."""
         try:
-            db = MongoDBConnection()
-            if not db.connected:
+            mongo_conn = MongoDBConnection()
+            db = mongo_conn.get_db()
+            if db is None:
                 print("Erro na conexão com o MongoDB.")
                 return
-            reservas_collection = db.get_db()['reservas']
-            result = reservas_collection.delete_one({'num_reserva': self.num_reserva})
+
+            reserva_collection = db['reserva']
+            result = reserva_collection.delete_one({'num_reserva': self.num_reserva})
             if result.deleted_count > 0:
                 print("Reserva deletada com sucesso no MongoDB.")
             else:
                 print("Reserva não encontrada no MongoDB.")
-            db.close_connection()
-        except Exception as e:
+        except PyMongoError as e:
             print(f"Erro ao deletar reserva no MongoDB: {e}")
+        finally:
+            mongo_conn.close_connection()
 
     def _delete_reserva_mysql(self):
+        """Deleta uma reserva no MySQL.""" 
         try:
-            db = MySQLConnection()
-            if not db.connected:
+            mysql_conn = MySQLConnection()
+            db = mysql_conn.get_connection()
+            if db is None:
                 print("Erro na conexão com o MySQL.")
                 return
-            connection = db.get_connection()
-            cursor = connection.cursor()
+
+            cursor = db.cursor()
             cursor.execute("DELETE FROM RESERVA WHERE NUM_RESERVA = %s", (self.num_reserva,))
-            connection.commit()
+            db.commit()
             if cursor.rowcount > 0:
                 print("Reserva deletada com sucesso no MySQL.")
             else:
                 print("Reserva não encontrada no MySQL.")
-            cursor.close()
-            db.close_connection()
-        except Exception as e:
+        except MySQLError as e:
             print(f"Erro ao deletar reserva no MySQL: {e}")
+        finally:
+            cursor.close()
+            mysql_conn.close_connection()
 
     @staticmethod
     def reserva_exists(num_reserva, db_type='mongodb'):
+        """Verifica se uma reserva com o número fornecido já existe no banco de dados."""
         if db_type == 'mongodb':
             return Reserva._reserva_exists_mongodb(num_reserva)
         elif db_type == 'mysql':
@@ -223,75 +243,90 @@ class Reserva:
 
     @staticmethod
     def _reserva_exists_mongodb(num_reserva):
-        mongo_conn = MongoDBConnection()
-        if not mongo_conn.connected:
-            print("Operação no MongoDB não pôde ser realizada.")
-            return False
+        """Verifica se a reserva existe no MongoDB.""" 
         try:
+            mongo_conn = MongoDBConnection()
             db = mongo_conn.get_db()
-            reservas_collection = db['reservas']
-            exists = reservas_collection.count_documents({'num_reserva': num_reserva}) > 0
-            return exists
+            if db is None:
+                print("Erro na conexão com o MongoDB.")
+                return False
+
+            reserva_collection = db['reserva']
+            reserva = reserva_collection.find_one({'num_reserva': num_reserva})
+            return reserva is not None
         except PyMongoError as e:
-            print(f"Erro ao verificar no MongoDB: {e}")
+            print(f"Erro ao verificar reserva no MongoDB: {e}")
             return False
         finally:
             mongo_conn.close_connection()
 
     @staticmethod
     def _reserva_exists_mysql(num_reserva):
+        """Verifica se a reserva existe no MySQL.""" 
         try:
-            db = MySQLConnection()
-            if not db.connected:
+            mysql_conn = MySQLConnection()
+            db = mysql_conn.get_connection()
+            if db is None:
+                print("Erro na conexão com o MySQL.")
                 return False
-            connection = db.get_connection()
-            cursor = connection.cursor()
-            cursor.execute("SELECT NUM_RESERVA FROM RESERVA WHERE NUM_RESERVA = %s", (num_reserva,))
-            result = cursor.fetchone()
-            cursor.close()
-            db.close_connection()
-            return result is not None
-        except Exception as e:
+
+            cursor = db.cursor()
+            cursor.execute("SELECT 1 FROM RESERVA WHERE NUM_RESERVA = %s", (num_reserva,))
+            return cursor.fetchone() is not None
+        except MySQLError as e:
             print(f"Erro ao verificar reserva no MySQL: {e}")
             return False
+        finally:
+            cursor.close()
+            mysql_conn.close_connection()
 
     @staticmethod
-    def get_total_reservas(db_type='mongodb'):
+    def get_total_reserva(db_type='mongodb'):
+        """Retorna o total de reserva no banco de dados especificado."""
         if db_type == 'mongodb':
-            return Reserva._get_total_reservas_mongodb()
+            return Reserva._get_total_reserva_mongodb()
         elif db_type == 'mysql':
-            return Reserva._get_total_reservas_mysql()
+            return Reserva._get_total_reserva_mysql()
         else:
             print("Tipo de banco de dados inválido.")
             return 0
 
     @staticmethod
-    def _get_total_reservas_mongodb():
+    def _get_total_reserva_mongodb():
+        """Retorna o total de reserva no MongoDB.""" 
         try:
-            db = MongoDBConnection()
-            if not db.connected:
+            mongo_conn = MongoDBConnection()
+            db = mongo_conn.get_db()
+            if db is None:
+                print("Erro na conexão com o MongoDB.")
                 return 0
-            reservas_collection = db.get_db()['reservas']
-            total = reservas_collection.count_documents({})
-            db.close_connection()
-            return total
-        except Exception as e:
-            print(f"Erro ao obter total de reservas no MongoDB: {e}")
+
+            reserva_collection = db['reserva']
+            total_reserva = reserva_collection.count_documents({})
+            return total_reserva
+        except PyMongoError as e:
+            print(f"Erro ao contar as reserva no MongoDB: {e}")
             return 0
+        finally:
+            mongo_conn.close_connection()
 
     @staticmethod
-    def _get_total_reservas_mysql():
+    def _get_total_reserva_mysql():
+        """Retorna o total de reserva no MySQL.""" 
         try:
-            db = MySQLConnection()
-            if not db.connected:
+            mysql_conn = MySQLConnection()
+            db = mysql_conn.get_connection()
+            if db is None:
+                print("Erro na conexão com o MySQL.")
                 return 0
-            connection = db.get_connection()
-            cursor = connection.cursor()
+
+            cursor = db.cursor()
             cursor.execute("SELECT COUNT(*) FROM RESERVA")
-            total = cursor.fetchone()[0]
-            cursor.close()
-            db.close_connection()
-            return total
-        except Exception as e:
-            print(f"Erro ao obter total de reservas no MySQL: {e}")
+            total_reserva = cursor.fetchone()[0]
+            return total_reserva
+        except MySQLError as e:
+            print(f"Erro ao contar as reserva no MySQL: {e}")
             return 0
+        finally:
+            cursor.close()
+            mysql_conn.close_connection()
